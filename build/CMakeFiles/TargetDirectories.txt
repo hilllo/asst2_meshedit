@@ -1,0 +1,5 @@
+/home/hilllo/GitHub/asst2_meshedit/build/CMU462/src/CMakeFiles/CMU462.dir
+/home/hilllo/GitHub/asst2_meshedit/build/CMU462/deps/glew/CMakeFiles/glew.dir
+/home/hilllo/GitHub/asst2_meshedit/build/CMU462/deps/glfw/src/CMakeFiles/glfw.dir
+/home/hilllo/GitHub/asst2_meshedit/build/src/CMakeFiles/meshedit.dir
+/home/hilllo/GitHub/asst2_meshedit/build/CMU462/deps/glfw/CMakeFiles/uninstall.dir

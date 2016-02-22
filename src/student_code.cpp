@@ -1,7 +1,7 @@
 /*
  * Student solution for CMU 15-462 Project 2 (MeshEdit)
  *
- * Implemented by ____ on ____.
+ * Implemented by Xiaoshan Lu on ____.
  *
  */
 
@@ -14,6 +14,9 @@ namespace CMU462
    {
       // TODO This method should split the given edge and return an iterator to the newly inserted vertex.
       // TODO The halfedge of this vertex should point along the edge that was split, rather than the new edges.
+
+
+
 
 			return VertexIter();
 	 }
@@ -28,8 +31,49 @@ namespace CMU462
    EdgeIter HalfedgeMesh::flipEdge( EdgeIter e0 )
    {
       // TODO This method should flip the given edge and return an iterator to the flipped edge.
+      // std::cout<<"flipEdge"<<std::endl;
 
-			return EdgeIter();
+      HalfedgeIter h[6];
+
+      h[0] = e0->halfedge();
+      h[1] = h[0]->next();
+      h[2] = h[1]->next();
+      h[3] = h[0]->twin();
+      h[4] = h[3]->next();
+      h[5] = h[4]->next();
+
+      // for(int i=0;i<6;i++){
+      //   std::cout<<"h"<<i<<": "<<elementAddress(h[i])<<std::endl;
+      // }
+
+      VertexIter v[4];
+      v[0] = h[0]->vertex();
+      v[1] = h[1]->vertex();
+      v[2] = h[2]->vertex();
+      v[3] = h[5]->vertex();
+
+      // for(int i=0;i<4;i++){
+      //   std::cout<<"v"<<i<<": "<<elementAddress(v[i])<<std::endl;
+      // }
+
+      FaceIter f[2];
+      f[0] = h[0]->face();
+      f[1] = h[3]->face();
+      // for(int i=0;i<2;i++){
+      //   std::cout<<"f"<<i<<": "<<elementAddress(f[i])<<std::endl;
+      // }
+
+      h[0]->setNeighbors(h[5],h[0]->twin(),v[2],h[0]->edge(),h[0]->face());
+      h[3]->setNeighbors(h[2],h[3]->twin(),v[3],h[3]->edge(),h[3]->face());
+
+      h[5]->setNeighbors(h[1],h[5]->twin(),h[5]->vertex(),h[5]->edge(),f[0]);
+      h[2]->setNeighbors(h[4],h[2]->twin(),h[2]->vertex(),h[2]->edge(),f[1]);
+
+      h[1]->setNeighbors(h[0],h[1]->twin(),h[1]->vertex(),h[1]->edge(),h[1]->face());
+      h[4]->setNeighbors(h[3],h[4]->twin(),h[4]->vertex(),h[4]->edge(),h[4]->face());
+
+      // std::cout<<"Done"<<std::endl;
+			return e0;
    }
 
    void MeshResampler::upsample( HalfedgeMesh& mesh )
