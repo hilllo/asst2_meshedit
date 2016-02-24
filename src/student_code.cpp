@@ -14,11 +14,70 @@ namespace CMU462
    {
       // TODO This method should split the given edge and return an iterator to the newly inserted vertex.
       // TODO The halfedge of this vertex should point along the edge that was split, rather than the new edges.
+      HalfedgeIter h[12];
 
+      h[0] = e0->halfedge();
+      h[1] = h[0]->next();
+      h[2] = h[1]->next();
+      h[3] = h[0]->twin();
+      h[4] = h[3]->next();
+      h[5] = h[4]->next();
+      // new
+      for(int i=6;i<12;i++){
+        h[i] = newHalfedge();
+      }
 
+      VertexIter v[5];
+      v[0] = h[0]->vertex();
+      v[1] = h[1]->vertex();
+      v[2] = h[2]->vertex();
+      v[3] = h[5]->vertex();
+      // new
+      v[4] = newVertex();
+      // assign
+      v[4]->halfedge() = h[0];
+      v[4]->position = (v[0]->position + v[1]->position)/2;
 
+      FaceIter f[4];
+      f[0] = h[0]->face();
+      f[1] = h[3]->face();
+      // new
+      for(int i = 2;i<4;i++){
+        f[i] = newFace();
+      }
+      // assign
+      f[2]->halfedge() = h[2];
+      f[3]->halfedge() = h[5];
 
-			return VertexIter();
+      EdgeIter e[4];
+      e[0] = e0;
+      for(int i=1;i<4;i++){
+        e[i] = newEdge();
+      }
+      // assign
+      e[1]->halfedge() = h[3];
+      e[2]->halfedge() = h[6];
+      e[3]->halfedge() = h[11];
+
+      //                    next        ,twin         ,vertex         ,edge         ,face
+      h[0 ]-> setNeighbors(h[0]->next() ,h[9]         ,v[4]           ,h[0]->edge() ,f[0]   );
+      h[1 ]-> setNeighbors(h[6]         ,h[1]->twin() ,h[1]->vertex() ,h[1]->edge() ,f[0]   );
+      h[2 ]-> setNeighbors(h[8]         ,h[2]->twin() ,h[2]->vertex() ,h[2]->edge() ,f[2]   );
+      h[3 ]-> setNeighbors(h[3]->next() ,h[8]         ,v[4]           ,e[1]         ,f[1]   );
+      h[4 ]-> setNeighbors(h[11]        ,h[4]->twin() ,h[4]->vertex() ,h[4]->edge() ,f[1]   );
+      h[5 ]-> setNeighbors(h[9]         ,h[5]->twin() ,h[5]->vertex() ,h[5]->edge() ,f[3]   );
+      h[6 ]-> setNeighbors(h[0]         ,h[7]         ,v[2]           ,e[2]         ,f[0]   );
+      h[7 ]-> setNeighbors(h[2]         ,h[6]         ,v[4]           ,e[2]         ,f[2]   );
+      h[8 ]-> setNeighbors(h[7]         ,h[3]         ,v[0]           ,e[1]         ,f[2]   );
+      h[9 ]-> setNeighbors(h[10]        ,h[0]         ,v[1]           ,e[0]         ,f[3]   );
+      h[10]-> setNeighbors(h[5]         ,h[11]        ,v[4]           ,e[3]         ,f[3]   );
+      h[11]-> setNeighbors(h[3]         ,h[10]        ,v[3]           ,e[3]         ,f[1]   );
+
+      f[0]->halfedge() = h[1];
+      f[1]->halfedge() = h[4];
+      e0->halfedge() = h[0];
+
+			return v[4];
 	 }
 
    VertexIter HalfedgeMesh::collapseEdge( EdgeIter e )
@@ -63,14 +122,18 @@ namespace CMU462
       //   std::cout<<"f"<<i<<": "<<elementAddress(f[i])<<std::endl;
       // }
 
-      h[0]->setNeighbors(h[5],h[0]->twin(),v[2],h[0]->edge(),h[0]->face());
-      h[3]->setNeighbors(h[2],h[3]->twin(),v[3],h[3]->edge(),h[3]->face());
+      h[0]->setNeighbors(h[5],h[0]->twin(),v[2],h[0]->edge(),f[0]);
+      h[3]->setNeighbors(h[2],h[3]->twin(),v[3],h[3]->edge(),f[1]);
 
       h[5]->setNeighbors(h[1],h[5]->twin(),h[5]->vertex(),h[5]->edge(),f[0]);
       h[2]->setNeighbors(h[4],h[2]->twin(),h[2]->vertex(),h[2]->edge(),f[1]);
 
-      h[1]->setNeighbors(h[0],h[1]->twin(),h[1]->vertex(),h[1]->edge(),h[1]->face());
-      h[4]->setNeighbors(h[3],h[4]->twin(),h[4]->vertex(),h[4]->edge(),h[4]->face());
+      h[1]->setNeighbors(h[0],h[1]->twin(),h[1]->vertex(),h[1]->edge(),f[0]);
+      h[4]->setNeighbors(h[3],h[4]->twin(),h[4]->vertex(),h[4]->edge(),f[1]);
+
+      f[0]->halfedge() = h[1];
+      f[1]->halfedge() = h[4];
+      e0->halfedge() = h[0];
 
       // std::cout<<"Done"<<std::endl;
 			return e0;
