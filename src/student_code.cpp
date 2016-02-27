@@ -14,6 +14,11 @@ namespace CMU462
    {
       // TODO This method should split the given edge and return an iterator to the newly inserted vertex.
       // TODO The halfedge of this vertex should point along the edge that was split, rather than the new edges.
+      if(e0->halfedge()->face()->isBoundary()||e0->halfedge()->twin()->face()->isBoundary()){
+        std::cerr << "Cannot split a boundary." << std::endl;
+        return VertexIter();
+      }
+
       HalfedgeIter h[12];
 
       h[0] = e0->halfedge();
@@ -80,17 +85,136 @@ namespace CMU462
 			return v[4];
 	 }
 
-   VertexIter HalfedgeMesh::collapseEdge( EdgeIter e )
+   VertexIter HalfedgeMesh::collapseEdge( EdgeIter e0 )
    {
       // TODO This method should collapse the given edge and return an iterator to the new vertex created by the collapse.
+      if(e0->halfedge()->face()->isBoundary()||e0->halfedge()->twin()->face()->isBoundary()
+      ||e0->halfedge()->next()->twin()->face()->isBoundary()||e0->halfedge()->next()->next()->twin()->face()->isBoundary()
+      ||e0->halfedge()->twin()->next()->twin()->face()->isBoundary()||e0->halfedge()->twin()->next()->next()->twin()->face()->isBoundary()){
+        std::cerr << "Cannot collapse a boundary." << std::endl;
+        return VertexIter();
+      }
 
-			return VertexIter();
+      HalfedgeIter h[10];
+
+      h[0] = e0->halfedge();
+      h[1] = h[0]->next();
+      h[2] = h[1]->next();
+      h[3] = h[0]->twin();
+      h[4] = h[3]->next();
+      h[5] = h[4]->next();
+      h[6] = h[1]->twin();
+      h[7] = h[2]->twin();
+      h[8] = h[4]->twin();
+      h[9] = h[5]->twin();
+
+
+      VertexIter v[4];
+      v[0] = h[0]->vertex();
+      v[1] = h[1]->vertex();
+      v[2] = h[2]->vertex();
+      v[3] = h[5]->vertex();
+      VertexIter vn = newVertex();;
+      vn->halfedge() = h[7];
+      vn->position = (v[0]->position + v[1]->position)/2;
+
+      EdgeIter e[5];
+      e[0] = e0;
+      e[1] = h[1]->edge();
+      e[2] = h[2]->edge();
+      e[3] = h[4]->edge();
+      e[4] = h[5]->edge();
+      EdgeIter en[2];
+      for(int i=0;i<2;i++){
+        en[i] = newEdge();
+      }
+      en[0]->halfedge() = h[6];
+      en[1]->halfedge() = h[8];
+
+      FaceIter f[2];
+      f[0] = h[0]->face();
+      f[1] = h[3]->face();
+
+      // delete
+      for(int i = 0;i<6;i++){
+        deleteHalfedge(h[i]);
+      }
+      for(int i = 0;i<2;i++){
+        deleteVertex(v[i]);
+      }
+      for(int i = 0;i<5;i++){
+        deleteEdge(e[i]);
+      }
+      for(int i = 0;i<2;i++){
+        deleteFace(f[i]);
+      }
+
+      // setNeighbors
+      h[6]->setNeighbors(h[6]->next() ,h[7]     ,h[6]->vertex(),en[0]      ,h[6]->face());
+      h[7]->setNeighbors(h[7]->next() ,h[6]     ,vn            ,en[0]      ,h[7]->face());
+      h[8]->setNeighbors(h[8]->next() ,h[9]     ,h[8]->vertex(),en[1]      ,h[8]->face());
+      h[9]->setNeighbors(h[9]->next() ,h[8]     ,vn            ,en[1]      ,h[9]->face());
+
+      // reassign every neighbors
+      HalfedgeIter h_pointer;
+      bool rightLoop = true;
+      bool leftLoop = true;
+
+      // "right" part
+      h_pointer = h[6]->next();
+      while(h_pointer!=h[9]){
+        // std::cout<<"right"<<": "<<elementAddress(h_pointer->edge())<<std::endl;
+        h_pointer->vertex() = vn;
+        if(!h_pointer->isBoundary()){
+          h_pointer = h_pointer->twin()->next();
+        }
+        else{
+          rightLoop = false;
+          break;
+        }
+      }
+      if(!rightLoop){
+        h_pointer = h[9]->next()->next()->twin();
+        while (!h_pointer->isBoundary()) {
+          h_pointer->vertex() = vn;
+          h_pointer = h_pointer->next()->next()->twin();
+        }
+        h_pointer->vertex() = vn;
+      }
+
+      // "left" part
+      h_pointer = h[8]->next();
+      while(h_pointer!=h[7]){
+        // std::cout<<"left"<<": "<<elementAddress(h_pointer->edge())<<std::endl;
+        h_pointer->vertex() = vn;
+        if(!h_pointer->isBoundary()){
+          h_pointer = h_pointer->twin()->next();
+        }
+        else{
+          leftLoop = false;
+          break;
+        }
+      }
+      if(!leftLoop){
+        h_pointer = h[7]->next()->next()->twin();
+        while (!h_pointer->isBoundary()) {
+          h_pointer->vertex() = vn;
+          h_pointer = h_pointer->next()->next()->twin();
+        }
+        h_pointer->vertex() = vn;
+      }
+
+			return vn;
    }
 
    EdgeIter HalfedgeMesh::flipEdge( EdgeIter e0 )
    {
       // TODO This method should flip the given edge and return an iterator to the flipped edge.
       // std::cout<<"flipEdge"<<std::endl;
+      if(e0->halfedge()->face()->isBoundary()||e0->halfedge()->twin()->face()->isBoundary()){
+        std::cerr << "Cannot flip a boundary." << std::endl;
+        return e0;
+      }
 
       HalfedgeIter h[6];
 
