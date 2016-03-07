@@ -17,6 +17,8 @@ namespace CMU462 {
          void upsample  ( HalfedgeMesh& mesh );
          void downsample( HalfedgeMesh& mesh );
          void resample  ( HalfedgeMesh& mesh );
+
+         int degree( VertexIter v );
    };
 }
 
