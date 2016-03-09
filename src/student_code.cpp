@@ -11,42 +11,6 @@
 namespace CMU462
 {
 
-  int MeshResampler::degree( VertexIter v ){
-    int val = 0;
-
-    HalfedgeIter eStart = v->halfedge();
-    HalfedgeIter th = eStart;
-    do{
-
-     val ++;
-     th = th->twin()->next();
-
-    }while(th != eStart);
-
-    return val;
-
-
-
-    // std::cout<<"v: "<<elementAddress(v)<<std::endl;
-    // HalfedgeIter starth = v->halfedge();
-    // HalfedgeIter h = starth;
-    // int d=0;
-    // do{
-    //   ++d;
-    //   h = h->next()->next()->twin();
-    // }while(h!=starth&&!h->isBoundary());
-    //
-    // if(h->isBoundary()){
-    //   ++d;
-    //   h = starth->twin();
-    //   while(!h->isBoundary()){
-    //     h = h->next()->twin();
-    //     ++d;
-    //   }
-    // }
-    // return d;
-  }
-
    VertexIter HalfedgeMesh::splitEdge( EdgeIter e0 )
    {
       // TODO This method should split the given edge and return an iterator to the newly inserted vertex.
@@ -125,135 +89,138 @@ namespace CMU462
 
    VertexIter HalfedgeMesh::collapseEdge( EdgeIter e0 )
    {
-      // TODO This method should collapse the given edge and return an iterator to the new vertex created by the collapse.
-      // check
-      if(e0->halfedge()->face()->isBoundary()||e0->halfedge()->twin()->face()->isBoundary()
-      ||e0->halfedge()->next()->twin()->face()->isBoundary()||e0->halfedge()->next()->next()->twin()->face()->isBoundary()
-      ||e0->halfedge()->twin()->next()->twin()->face()->isBoundary()||e0->halfedge()->twin()->next()->next()->twin()->face()->isBoundary()){
-        std::cerr << "Cannot collapse a boundary." << std::endl;
-        return VertexIter();
-      }
+     // TODO This method should collapse the given edge and return an iterator to the new vertex created by the collapse.
+     // check
+     if(e0->halfedge()->face()->isBoundary()||e0->halfedge()->twin()->face()->isBoundary()
+     ||e0->halfedge()->next()->twin()->face()->isBoundary()||e0->halfedge()->next()->next()->twin()->face()->isBoundary()
+     ||e0->halfedge()->twin()->next()->twin()->face()->isBoundary()||e0->halfedge()->twin()->next()->next()->twin()->face()->isBoundary()){
+       throw EdgeEditException(31);
+       //  std::cerr << "Cannot collapse a boundary." << std::endl;
+      //  return VertexIter();
+     }
 
-      HalfedgeIter h[10];
+     HalfedgeIter h[10];
 
-      h[0] = e0->halfedge();
-      h[1] = h[0]->next();
-      h[2] = h[1]->next();
-      h[3] = h[0]->twin();
-      h[4] = h[3]->next();
-      h[5] = h[4]->next();
-      h[6] = h[1]->twin();
-      h[7] = h[2]->twin();
-      h[8] = h[4]->twin();
-      h[9] = h[5]->twin();
+     h[0] = e0->halfedge();
+     h[1] = h[0]->next();
+     h[2] = h[1]->next();
+     h[3] = h[0]->twin();
+     h[4] = h[3]->next();
+     h[5] = h[4]->next();
+     h[6] = h[1]->twin();
+     h[7] = h[2]->twin();
+     h[8] = h[4]->twin();
+     h[9] = h[5]->twin();
 
 
-      VertexIter v[4];
-      v[0] = h[0]->vertex();
-      v[1] = h[1]->vertex();
-      v[2] = h[2]->vertex();
-      v[3] = h[5]->vertex();
-      VertexIter vn = newVertex();;
-      vn->halfedge() = h[7];
-      vn->position = (v[0]->position + v[1]->position)/2;
+     VertexIter v[4];
+     v[0] = h[0]->vertex();
+     v[1] = h[1]->vertex();
+     v[2] = h[2]->vertex();
+     v[3] = h[5]->vertex();
+     // check
+     for(int i=0;i<4;i++){
+       if(v[i]->degree()<=3){
+          //  std::cerr << "Cannot collapse this edge." << std::endl;
+           throw EdgeEditException(30);
+          //  return v[0];
+       }
+     }
 
-      EdgeIter e[5];
-      e[0] = e0;
-      e[1] = h[1]->edge();
-      e[2] = h[2]->edge();
-      e[3] = h[4]->edge();
-      e[4] = h[5]->edge();
-      EdgeIter en[2];
-      for(int i=0;i<2;i++){
-        en[i] = newEdge();
-      }
-      en[0]->halfedge() = h[6];
-      en[1]->halfedge() = h[8];
+     v[0]->position = (v[0]->position + v[1]->position)/2;
 
-      FaceIter f[2];
-      f[0] = h[0]->face();
-      f[1] = h[3]->face();
+     EdgeIter e[5];
+     e[0] = e0;
+     e[1] = h[1]->edge();
+     e[2] = h[2]->edge();
+     e[3] = h[4]->edge();
+     e[4] = h[5]->edge();
 
-      // check
-      if(h[6]->next()==h[9]&&h[8]->next()==h[7]&&h[7]->next()==h[9]->next()->twin()){
-        std::cerr << "Cannot collapse an edge of a tetrahedral." << std::endl;
-        return VertexIter();
-      }
+     FaceIter f[2];
+     f[0] = h[0]->face();
+     f[1] = h[3]->face();
 
-      // delete
-      for(int i = 0;i<6;i++){
-        deleteHalfedge(h[i]);
-      }
-      for(int i = 0;i<2;i++){
-        deleteVertex(v[i]);
-      }
-      for(int i = 0;i<5;i++){
-        deleteEdge(e[i]);
-      }
-      for(int i = 0;i<2;i++){
-        deleteFace(f[i]);
-      }
 
-      // setNeighbors
-      h[6]->setNeighbors(h[6]->next() ,h[7]     ,h[6]->vertex(),en[0]      ,h[6]->face());
-      h[7]->setNeighbors(h[7]->next() ,h[6]     ,vn            ,en[0]      ,h[7]->face());
-      h[8]->setNeighbors(h[8]->next() ,h[9]     ,h[8]->vertex(),en[1]      ,h[8]->face());
-      h[9]->setNeighbors(h[9]->next() ,h[8]     ,vn            ,en[1]      ,h[9]->face());
+     // setNeighbors
+     h[6]->setNeighbors(h[6]->next() ,h[7]     ,h[6]->vertex() ,e[1]      ,h[6]->face());
+     h[7]->setNeighbors(h[7]->next() ,h[6]     ,v[0]           ,e[1]      ,h[7]->face());
+     h[8]->setNeighbors(h[8]->next() ,h[9]     ,h[8]->vertex() ,e[4]      ,h[8]->face());
+     h[9]->setNeighbors(h[9]->next() ,h[8]     ,v[0]           ,e[4]      ,h[9]->face());
+     v[0]->halfedge() = h[9];
+     v[2]->halfedge() = h[6];
+     v[3]->halfedge() = h[8];
+     e[1]->halfedge() = h[6];
+     e[4]->halfedge() = h[9];
 
-      // reassign every neighbors
-      HalfedgeIter h_pointer;
-      bool rightLoop = true;
-      bool leftLoop = true;
+     // reassign every neighbors
+     HalfedgeIter h_pointer;
+     bool rightLoop = true;
+     bool leftLoop = true;
 
-      // "right" part
-      h_pointer = h[6]->next();
-      while(h_pointer!=h[9]){
-        // std::cout<<"right"<<": "<<elementAddress(h_pointer->edge())<<std::endl;
-        h_pointer->setNeighbors(h_pointer->next(),h_pointer->twin(),vn,h_pointer->edge(),h_pointer->face());
-        // h_pointer->vertex() = vn;
-        if(!h_pointer->isBoundary()){
-          h_pointer = h_pointer->twin()->next();
-        }
-        else{
-          rightLoop = false;
-          break;
-        }
-      }
-      if(!rightLoop){
-        h_pointer = h[9]->next()->next()->twin();
-        while (!h_pointer->isBoundary()) {
-          h_pointer->setNeighbors(h_pointer->next(),h_pointer->twin(),vn,h_pointer->edge(),h_pointer->face());
-          // h_pointer->vertex() = vn;
-          h_pointer = h_pointer->next()->next()->twin();
-        }
-        h_pointer->vertex() = vn;
-      }
+     // "right" part
+     h_pointer = h[6]->next();
+     while(h_pointer!=h[9]){
+       // std::cout<<"right"<<": "<<elementAddress(h_pointer->edge())<<std::endl;
+       h_pointer->setNeighbors(h_pointer->next(),h_pointer->twin(),v[0],h_pointer->edge(),h_pointer->face());
+       // h_pointer->vertex() = vn;
+       if(!h_pointer->isBoundary()){
+         h_pointer = h_pointer->twin()->next();
+       }
+       else{
+         rightLoop = false;
+         break;
+       }
+     }
+     if(!rightLoop){
+       h_pointer = h[9]->next()->next()->twin();
+       while (!h_pointer->isBoundary()) {
+         h_pointer->setNeighbors(h_pointer->next(),h_pointer->twin(),v[0],h_pointer->edge(),h_pointer->face());
+         // h_pointer->vertex() = vn;
+         h_pointer = h_pointer->next()->next()->twin();
+       }
+       h_pointer->vertex() = v[0];
+     }
 
-      // "left" part
-      h_pointer = h[8]->next();
-      while(h_pointer!=h[7]){
-        // std::cout<<"left"<<": "<<elementAddress(h_pointer->edge())<<std::endl;
-        h_pointer->setNeighbors(h_pointer->next(),h_pointer->twin(),vn,h_pointer->edge(),h_pointer->face());
-        // h_pointer->vertex() = vn;
-        if(!h_pointer->isBoundary()){
-          h_pointer = h_pointer->twin()->next();
-        }
-        else{
-          leftLoop = false;
-          break;
-        }
-      }
-      if(!leftLoop){
-        h_pointer = h[7]->next()->next()->twin();
-        while (!h_pointer->isBoundary()) {
-          h_pointer->setNeighbors(h_pointer->next(),h_pointer->twin(),vn,h_pointer->edge(),h_pointer->face());
-          // h_pointer->vertex() = vn;
-          h_pointer = h_pointer->next()->next()->twin();
-        }
-        h_pointer->vertex() = vn;
-      }
+     // "left" part
+     h_pointer = h[8]->next();
+     while(h_pointer!=h[7]){
+       // std::cout<<"left"<<": "<<elementAddress(h_pointer->edge())<<std::endl;
+       h_pointer->setNeighbors(h_pointer->next(),h_pointer->twin(),v[0],h_pointer->edge(),h_pointer->face());
+       // h_pointer->vertex() = vn;
+       if(!h_pointer->isBoundary()){
+         h_pointer = h_pointer->twin()->next();
+       }
+       else{
+         leftLoop = false;
+         break;
+       }
+     }
+     if(!leftLoop){
+       h_pointer = h[7]->next()->next()->twin();
+       while (!h_pointer->isBoundary()) {
+         h_pointer->setNeighbors(h_pointer->next(),h_pointer->twin(),v[0],h_pointer->edge(),h_pointer->face());
+         // h_pointer->vertex() = vn;
+         h_pointer = h_pointer->next()->next()->twin();
+       }
+       h_pointer->vertex() = v[0];
+     }
 
-			return vn;
+     // delete
+     for(int i = 0;i<6;i++){
+       deleteHalfedge(h[i]);
+     }
+     for(int i = 1;i<2;i++){
+       deleteVertex(v[i]);
+     }
+
+     deleteEdge(e[0]);
+     deleteEdge(e[2]);
+     deleteEdge(e[3]);
+
+     for(int i = 0;i<2;i++){
+       deleteFace(f[i]);
+     }
+     return v[0];
    }
 
    EdgeIter HalfedgeMesh::flipEdge( EdgeIter e0 )
@@ -333,20 +300,20 @@ namespace CMU462
       // TODO Compute new positions for all the vertices in the input mesh, using the Loop subdivision rule,
       // TODO and store them in Vertex::newPosition. At this point, we also want to mark each vertex as being
       // TODO a vertex of the original mesh.
-
+      int countv = 0;
       for(VertexIter v = mesh.verticesBegin();v!=mesh.verticesEnd();v++){
+        countv++;
         v->isNew=false;
-        int n = degree(v);
         // std::cout<<"degree: "<<n<<std::endl;
         double myWeight,uWeight;
-        if(n==3){
+        if(v->degree()==3){
           uWeight = 3.0/16.0;
         }
         else{
-          uWeight = 3.0/(8.0 * n);
+          uWeight = 3.0/(8.0 * double(v->degree()));
         }
 
-        myWeight = 1.0 - uWeight * n;
+        myWeight = 1.0 - uWeight * double(v->degree());
         v->newPosition = v->position * myWeight;
 
         HalfedgeIter starth = v->halfedge();
@@ -367,10 +334,12 @@ namespace CMU462
         }// end if isBoundary()
         // std::cout<<"newPosition: "<<v->newPosition<<std::endl;
       } // end for
+      std::cout<<"old vertices: "<<countv<<std::endl;
 
       // TODO Next, compute the updated vertex positions associated with edges, and store it in Edge::newPosition.
 
       list<EdgeIter> oeList;
+      int counte = 0;
       for(EdgeIter e = mesh.edgesBegin();e!=mesh.edgesEnd();e++){
         e->isNew = false;
         oeList.push_back(e);
@@ -383,8 +352,10 @@ namespace CMU462
         if(!e->halfedge()->twin()->isBoundary()){
           e->newPosition += e->halfedge()->twin()->next()->twin()->vertex()->position * uWeight;
         }
+        counte++;
         // std::cout<<"newPosition: "<<e->newPosition<<std::endl;
       }
+      std::cout<<"old mesh: "<<counte<<std::endl;
 
 
       // TODO Next, we're going to split every edge in the mesh, in any order.  For future
@@ -402,17 +373,23 @@ namespace CMU462
       }
 
       // TODO Now flip any new edge that connects an old and new vertex.
+      counte = 0;
       for(EdgeIter e = mesh.edgesBegin();e!=mesh.edgesEnd();e++){
         if(e->isNew && (e->halfedge()->vertex()->isNew ^ e->halfedge()->twin()->vertex()->isNew)){
             mesh.flipEdge(e);
         }
+        counte++;
       }
+      std::cout<<"new mesh: "<<counte<<std::endl;
 
+      countv = 0;
       // TODO Finally, copy the new vertex positions into final Vertex::position.
       for(VertexIter v = mesh.verticesBegin();v!=mesh.verticesEnd();v++){
+        countv++;
         // std::cout<<"newPosition: "<<v->newPosition<<std::endl;
         v->position = v->newPosition;
       }
+      std::cout<<"new vertices: "<<countv<<std::endl;
 
    }
 
@@ -424,18 +401,50 @@ namespace CMU462
    : edge( _edge )
    {
       // TODO Compute the combined quadric from the edge endpoints.
-
+      Matrix4x4 combQ = _edge->halfedge()->vertex()->quadric + _edge->halfedge()->twin()->vertex()->quadric;
 
       // TODO Build the 3x3 linear system whose solution minimizes
       // the quadric error associated with these two endpoints.
+      Matrix3x3 A;
+      for(int i = 0;i<3;i++){
+        for(int j = 0;j<3;j++){
+          A(i,j) = combQ(i,j);
+        }
+      }
 
+      Vector3D b = Vector3D(-combQ(0,3),-combQ(1,3),-combQ(2,3));
 
       // TODO Use this system to solve for the optimal position, and
       // TODO store it in EdgeRecord::optimalPoint.
-
+      Vector3D x = A.inv() * b;
+      optimalPoint = x;
 
       // TODO Also store the cost associated with collapsing this edge
       // TODO in EdgeRecord::Cost.
+      VertexIter v[4];
+      bool collapsable = true;
+      v[0] = _edge->halfedge()->vertex();
+      v[1] = _edge->halfedge()->twin()->vertex();
+      v[2] = _edge->halfedge()->next()->twin()->vertex();
+      v[3] = _edge->halfedge()->twin()->next()->twin()->vertex();
+      for(int i=0;i<4;i++){
+        if(v[i]->degree()<=3){
+            std::cerr << "Cannot collapse a boundary." << std::endl;
+            collapsable = false;
+            break;
+        }
+      }
+
+      if(collapsable){
+        Vector4D xh = Vector4D(x.x,x.y,x.z,1);
+        score = dot(combQ*xh, xh);
+      }
+      else {
+         score = numeric_limits<double>::max();
+      }
+
+      edge = _edge;
+
 
    }
 

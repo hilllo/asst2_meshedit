@@ -1,13 +1,41 @@
 #ifndef STUDENT_CODE_H
 #define STUDENT_CODE_H
 
+#include <exception>
+
 #include "halfEdgeMesh.h"
 
 using namespace std;
 
 namespace CMU462 {
+  class EdgeEditException: public exception {
+  public:
+    EdgeEditException(int exptno){
+      this->exptno = exptno;
+    }
 
-   class MeshResampler{
+    void exptInfo(){
+      switch (this->exptno){
+        case 30:{
+          std::cerr << "Cannot collapse this edge." << std::endl;
+          break;
+        }
+        case 31:{
+          std::cerr << "Cannot collapse a boundary." << std::endl;
+          break;
+        }
+        default:{
+          std::cerr << "Cannot edit this edge." << std::endl;
+        }
+      }
+    }
+
+  private:
+    int exptno;
+
+  };
+
+  class MeshResampler{
 
       public:
 
@@ -18,7 +46,7 @@ namespace CMU462 {
          void downsample( HalfedgeMesh& mesh );
          void resample  ( HalfedgeMesh& mesh );
 
-         int degree( VertexIter v );
+        //  void downsample_10( HalfedgeMesh& mesh );
    };
 }
 

@@ -243,7 +243,12 @@ namespace CMU462 {
             break;
          case 'c':
          case 'C':
-            collapseSelectedEdge();
+            try{
+              collapseSelectedEdge();
+            }
+            catch(EdgeEditException& e){
+              e.exptInfo();
+            }
             break;
          case 'n':
          case 'N':
