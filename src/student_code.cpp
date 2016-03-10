@@ -582,6 +582,16 @@ namespace CMU462
           erQueue.insert(inse);
           h = h->next()->next()->twin();
         }while(h!=vn->halfedge()&&!h->face()->isBoundary());
+
+        if(h->face()->isBoundary()){
+          h = vn->halfedge()->twin()->next()->twin();
+          do{
+            EdgeRecord inse;
+            inse = EdgeRecord(h->edge());
+            erQueue.insert(inse);
+            h = h->next()->twin();
+          }while(h!=vn->halfedge()&&!h->face()->isBoundary());
+        }
       }
 }
 
