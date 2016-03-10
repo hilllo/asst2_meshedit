@@ -235,11 +235,21 @@ namespace CMU462 {
             break;
          case 'f':
          case 'F':
-            flipSelectedEdge();
+            try{
+              flipSelectedEdge();
+            }
+            catch(EdgeEditException& e){
+              e.exptInfo();
+            }
             break;
          case 's':
          case 'S':
-            splitSelectedEdge();
+            try{
+              splitSelectedEdge();
+            }
+            catch(EdgeEditException& e){
+              e.exptInfo();
+            }
             break;
          case 'c':
          case 'C':

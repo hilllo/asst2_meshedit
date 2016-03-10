@@ -16,6 +16,22 @@ namespace CMU462 {
 
     void exptInfo(){
       switch (this->exptno){
+        case 10:{
+          std::cerr << "Cannot flip this edge." << std::endl;
+          break;
+        }
+        case 11:{
+          std::cerr << "Cannot flip a boundary." << std::endl;
+          break;
+        }
+        case 20:{
+          std::cerr << "Cannot split this edge." << std::endl;
+          break;
+        }
+        case 21:{
+          std::cerr << "Cannot split a boundary." << std::endl;
+          break;
+        }
         case 30:{
           std::cerr << "Cannot collapse this edge." << std::endl;
           break;
@@ -29,6 +45,7 @@ namespace CMU462 {
         }
       }
     }
+
 
   private:
     int exptno;
@@ -46,7 +63,7 @@ namespace CMU462 {
          void downsample( HalfedgeMesh& mesh );
          void resample  ( HalfedgeMesh& mesh );
 
-        //  void downsample_10( HalfedgeMesh& mesh );
+         void downsample_10( HalfedgeMesh& mesh );
    };
 }
 

@@ -90,6 +90,12 @@ namespace CMU462
          {
             queue.erase( queue.begin() );
          }
+         void clear( void )
+         {
+           while(!queue.empty()){
+             queue.erase( queue.begin() );
+           }
+         }
 
       protected:
          set<T> queue;
