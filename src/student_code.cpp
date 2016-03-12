@@ -94,6 +94,22 @@ namespace CMU462
 			return v[4];
 	 }
 
+   bool collapseValid(EdgeIter e){
+     VertexIter v[4];
+     v[0] = e->halfedge()->vertex();
+     v[1] = e->halfedge()->twin()->vertex();
+     v[2] = e->halfedge()->next()->twin()->vertex();
+     v[1] = e->halfedge()->twin()->next()->twin()->vertex();
+     for(int i=0;i<4;i++){
+       if(v[i]->degree()<3){
+          //  std::cerr << "Cannot collapse this edge." << std::endl;
+           // throw EdgeEditException(30);
+           return false;
+       }
+     }
+     return true;
+   }
+
    VertexIter HalfedgeMesh::collapseEdge( EdgeIter e0 ){
      HalfedgeMesh::collapseEdge(e0,false);
    }
@@ -138,8 +154,8 @@ namespace CMU462
      if(!ds){
        for(int i=0;i<4;i++){
          if(v[i]->degree()<3){
-             std::cerr << "Cannot collapse this edge." << std::endl;
-            //  throw EdgeEditException(30);
+            //  std::cerr << "Cannot collapse this edge." << std::endl;
+             throw EdgeEditException(30);
              return v[0];
          }
        }
@@ -249,7 +265,7 @@ namespace CMU462
     //  std::cout<<"delete edge"<<std::endl;
      deleteEdge(e[0]);
      deleteEdge(e[2]);
-     deleteEdge(h[4]->edge());
+     deleteEdge(e[3]);
 
     //  std::cout<<"delete vertex"<<std::endl;
      for(int i = 1;i<2;i++){
@@ -523,112 +539,130 @@ namespace CMU462
 
    void MeshResampler::downsample( HalfedgeMesh& mesh )
    {
-      // TODO Compute initial quadrics for each face by simply writing the plane
-      // equation for the face in homogeneous coordinates.  These quadrics should
-      // be stored in Face::quadric
-      for(FaceIter f = mesh.facesBegin();f!=mesh.facesEnd();f++){
-        Vector3D p = f->halfedge()->vertex()->position;
-        Vector3D n = f->normal();
-        double d = dot(-n,p);
-        Vector4D v = Vector4D(n.x,n.y,n.z,d);
-        f->quadric = outer(v,v);
-        // std::cout<<f->quadric<<std::endl;
-      }
+     int _nFaces = mesh.nFaces();
+     int _nVertices = mesh.nVertices();
+     int restFaces = _nFaces/2;
 
-      // TODO Compute an initial quadric for each vertex as the sum of the quadrics
-      // associated with the incident faces, storing it in Vertex::quadric
-      for(VertexIter v = mesh.verticesBegin();v!=mesh.verticesEnd();v++){
-        HalfedgeIter h = v->halfedge();
-        v->quadric.zero();
-        do{
-          v->quadric += h->face()->quadric;
-          h = h->next()->next()->twin();
-        }while(h!=v->halfedge()&&!h->isBoundary());
+     while (_nFaces>restFaces){
+       // TODO Compute initial quadrics for each face by simply writing the plane
+       // equation for the face in homogeneous coordinates.  These quadrics should
+       // be stored in Face::quadric
+       for(FaceIter f = mesh.facesBegin();f!=mesh.facesEnd();f++){
+         Vector3D p = f->halfedge()->vertex()->position;
+         Vector3D n = f->normal();
+         double d = dot(-n,p);
+         Vector4D v = Vector4D(n.x,n.y,n.z,d);
+         f->quadric = outer(v,v);
+         // std::cout<<f->quadric<<std::endl;
+       }
 
-        if(h->isBoundary()){
-          h = v->halfedge()->twin();
-          do{
-            v->quadric += h->face()->quadric;
-            h = h->next()->twin();
-          }while(h!=v->halfedge()->twin()&&!h->isBoundary());
-        }
-        // std::cout<<v->quadric<<std::endl;
-      }
+       // TODO Compute an initial quadric for each vertex as the sum of the quadrics
+       // associated with the incident faces, storing it in Vertex::quadric
+       for(VertexIter v = mesh.verticesBegin();v!=mesh.verticesEnd();v++){
+         HalfedgeIter h = v->halfedge();
+         v->quadric.zero();
+         do{
+           v->quadric += h->face()->quadric;
+           h = h->next()->next()->twin();
+         }while(h!=v->halfedge()&&!h->isBoundary());
+
+         if(h->isBoundary()){
+           h = v->halfedge()->twin();
+           do{
+             v->quadric += h->face()->quadric;
+             h = h->next()->twin();
+           }while(h!=v->halfedge()->twin()&&!h->isBoundary());
+         }
+         // std::cout<<v->quadric<<std::endl;
+       }
 
 
-      // TODO Build a priority queue of edges according to their quadric error cost,
-      // TODO i.e., by building an EdgeRecord for each edge and sticking it in the queue.
-      // MutablePriorityQueue<EdgeRecord> erQueue;
-      erQueue.clear();
-      for(EdgeIter e = mesh.edgesBegin();e!=mesh.edgesEnd();e++){
-        // erQueue.remove(e->record);
-        EdgeRecord er;
-        // try{
-          er = EdgeRecord(e);
-        // }
-        // catch (EdgeEditException& exception){
-        //   exception.exptInfo();
-        //   std::cerr << "Cannot downsample this mesh." << std::endl;
-        //   return;
-        // }
-        e->record = er;
-        erQueue.insert(er);
-      }
 
-      // TODO Until we reach the target edge budget, collapse the best edge.  Remember
-      // TODO to remove from the queue any edge that touches the collapsing edge BEFORE
-      // TODO it gets collapsed, and add back into the queue any edge touching the collapsed
-      // TODO vertex AFTER it's been collapsed.  Also remember to assign a quadric to the
-      // TODO collapsed vertex, and to pop the collapsed edge off the top of the queue.
-      int _nFaces = mesh.nFaces();
-      int _nVertices = mesh.nVertices();
+       // TODO Build a priority queue of edges according to their quadric error cost,
+       // TODO i.e., by building an EdgeRecord for each edge and sticking it in the queue.
+       // MutablePriorityQueue<EdgeRecord> erQueue;
+       erQueue.clear();
+       for(EdgeIter e = mesh.edgesBegin();e!=mesh.edgesEnd();e++){
+         // erQueue.remove(e->record);
+         EdgeRecord er;
+         // try{
+           er = EdgeRecord(e);
+         // }
+         // catch (EdgeEditException& exception){
+         //   exception.exptInfo();
+         //   std::cerr << "Cannot downsample this mesh." << std::endl;
+         //   return;
+         // }
+         e->record = er;
+         erQueue.insert(er);
+       }
 
-      int reduceFaces = _nFaces/10+1;
-      if(_nFaces<=4){
-        std::cerr<<"Cannot downsample anymore."<<std::endl;
-        return;
-      }
 
-      // std::cout<<"nFaces: "<<_nFaces<<endl;
-      // std::cout<<"nVertices: "<<_nVertices<<endl;
-      while(reduceFaces>0){
-        reduceFaces--;
-        // Get the cheapest edge from the queue.
-        EdgeRecord er= erQueue.top();
-        EdgeIter e = er.edge;
+       // TODO Until we reach the target edge budget, collapse the best edge.  Remember
+       // TODO to remove from the queue any edge that touches the collapsing edge BEFORE
+       // TODO it gets collapsed, and add back into the queue any edge touching the collapsed
+       // TODO vertex AFTER it's been collapsed.  Also remember to assign a quadric to the
+       // TODO collapsed vertex, and to pop the collapsed edge off the top of the queue.
+       _nFaces = mesh.nFaces();
+       _nVertices = mesh.nVertices();
 
-        // Remove the cheapest edge from the queue by calling pop().
-        erQueue.pop();
+       // int reduceFaces = 60;
+       int reduceFaces = 0;
+       if(_nFaces<=4){
+         std::cerr<<"Cannot downsample anymore."<<std::endl;
+         return;
+       }
+       else if (_nFaces<1000){
+         reduceFaces = _nFaces/10+1;
+       }
+       else{
+         reduceFaces = 10;
+       }
 
-        // Compute the new quadric by summing the quadrics at its two endpoints.
-        Matrix4x4 newQ = e->halfedge()->vertex()->quadric + e->halfedge()->twin()->vertex()->quadric;
+       // std::cout<<"nFaces: "<<_nFaces<<endl;
+       // std::cout<<"nVertices: "<<_nVertices<<endl;
+      //  std::cout<<"Downsampled "<<reduceFaces<<"Faces."<<std::endl;
+       while(reduceFaces>0){
+         reduceFaces--;
+        //  std::cout<<"rest reduceFaces: "<<reduceFaces<<endl;
+         // Get the cheapest edge from the queue.
+         EdgeRecord er= erQueue.top();
+         EdgeIter e = er.edge;
 
-        // Remove any edge touching either of its endpoints from the queue. (Has been done in collapse)
-        // Collapse the edge.
-        VertexIter vn = mesh.collapseEdge(e,true);
+         // Remove the cheapest edge from the queue by calling pop().
+         erQueue.pop();
 
-        // Set the quadric of the new vertex to the quadric computed in Step 2.
-        vn->quadric = newQ;
+         // Compute the new quadric by summing the quadrics at its two endpoints.
+         Matrix4x4 newQ = e->halfedge()->vertex()->quadric + e->halfedge()->twin()->vertex()->quadric;
 
-        // Insert any edge touching the new vertex into the queue, creating new edge records for each of them.
-        HalfedgeIter h = vn->halfedge();
-        do{
-          EdgeRecord inse;
-          inse = EdgeRecord(h->edge());
-          erQueue.insert(inse);
-          h = h->next()->next()->twin();
-        }while(h!=vn->halfedge()&&!h->face()->isBoundary());
+         // Remove any edge touching either of its endpoints from the queue. (Has been done in collapse)
+         // Collapse the edge.
+         VertexIter vn = mesh.collapseEdge(e,true);
 
-        if(h->face()->isBoundary()){
-          h = vn->halfedge()->twin()->next()->twin();
-          do{
-            EdgeRecord inse;
-            inse = EdgeRecord(h->edge());
-            erQueue.insert(inse);
-            h = h->next()->twin();
-          }while(h!=vn->halfedge()&&!h->face()->isBoundary());
-        }
-      }
+         // Set the quadric of the new vertex to the quadric computed in Step 2.
+         vn->quadric = newQ;
+
+         // Insert any edge touching the new vertex into the queue, creating new edge records for each of them.
+         HalfedgeIter h = vn->halfedge();
+         do{
+           EdgeRecord inse;
+           inse = EdgeRecord(h->edge());
+           erQueue.insert(inse);
+           h = h->next()->next()->twin();
+         }while(h!=vn->halfedge()&&!h->face()->isBoundary());
+
+         if(h->face()->isBoundary()){
+           h = vn->halfedge()->twin()->next()->twin();
+           do{
+             EdgeRecord inse;
+             inse = EdgeRecord(h->edge());
+             erQueue.insert(inse);
+             h = h->next()->twin();
+           }while(h!=vn->halfedge()&&!h->face()->isBoundary());
+         }
+       }
+     }
+
 }
 
    void Vertex::computeCentroid( void )
@@ -713,25 +747,97 @@ namespace CMU462
 			// return Vector3D();
 	 }
    //
-  //  void MeshResampler::resample( HalfedgeMesh& mesh )
-  //  {
-  //     // TODO Compute the mean edge length.
-   //
-   //
-  //     // TODO Repeat the four main steps for 5 or 6 iterations
-   //
-   //
-  //     // TODO Split edges much longer than the target length (being careful about how the loop is written!)
-   //
-   //
-  //     // TODO Collapse edges much shorter than the target length.  Here we need to be EXTRA careful about
-  //     // TODO advancing the loop, because many edges may have been destroyed by a collapse (which ones?)
-   //
-  //     //
-  //     // TODO Now flip each edge if it improves vertex degree
-   //
-   //
-  //     // TODO Finally, apply some tangential smoothing to the vertex positions
-  //  }
+   void MeshResampler::resample( HalfedgeMesh& mesh )
+   {
+      // TODO Repeat the four main steps for 5 or 6 iterations
+
+      for(int rmain = 0; rmain<1;rmain++){
+        // TODO Compute the mean edge length.
+        double L = 0.0;
+        for(EdgeIter e = mesh.edgesBegin();e!=mesh.edgesEnd();e++){
+          L += e->length();
+          e->isNew = false;
+        }
+        L /= mesh.nEdges();
+
+        list<EdgeIter> edgeList;
+        double splitL = 4.0 * L / 3.0;
+        double collapseL = 4.0 * L / 5.0;
+
+        // TODO Split edges much longer than the target length (being careful about how the loop is written!)
+        for(EdgeIter e = mesh.edgesBegin();e!=mesh.edgesEnd();e++){
+          if(e->length()>splitL){
+            edgeList.push_back(e);
+          }
+        }
+        while(!edgeList.empty()){
+          EdgeIter e = edgeList.back();
+          edgeList.pop_back();
+          mesh.splitEdge(e);
+        }
+
+
+        // TODO Collapse edges much shorter than the target length.  Here we need to be EXTRA careful about
+        // TODO advancing the loop, because many edges may have been destroyed by a collapse (which ones?)
+        edgeList.clear();
+        for(EdgeIter e = mesh.edgesBegin();e!=mesh.edgesEnd();e++){
+          edgeList.push_back(e);
+        }
+        // cout<<collapseList.size()<<endl;
+
+        while(!edgeList.empty()){
+          EdgeIter e = edgeList.back();
+          edgeList.pop_back();
+          if(e->length()<collapseL){
+            // if(collapseValid(e)){
+              edgeList.remove(e->halfedge()->next()->next()->edge());
+              edgeList.remove(e->halfedge()->twin()->next()->edge());
+              mesh.collapseEdge(e);
+              // cout<<"C!"<<endl;
+            // }
+
+          } // if(e->length()<collapseL)
+        } // while(!edgeList.empty())
+
+        // TODO Now flip each edge if it improves vertex degree
+        edgeList.clear();
+        for(EdgeIter e = mesh.edgesBegin();e!=mesh.edgesEnd();e++){
+          edgeList.push_back(e);
+        }
+        while(!edgeList.empty()){
+          EdgeIter e = edgeList.back();
+          edgeList.pop_back();
+
+          int a1 = e->halfedge()->vertex()->degree();
+          int a2 = e->halfedge()->twin()->vertex()->degree();
+          int b1 = e->halfedge()->next()->twin()->vertex()->degree();
+          int b2 = e->halfedge()->twin()->next()->twin()->vertex()->degree();
+
+          int oldD, newD;
+          oldD = abs(a1-6) + abs(a2-6) + abs(b1-6) + abs(b2-6);
+          newD = abs(a1-1-6) + abs(a2-1-6) + abs(b1+1-6) + abs(b2+1-6);
+
+          if(newD<oldD){
+            mesh.flipEdge(e);
+          }
+        } // while(!edgeList.empty())
+
+        // TODO Finally, apply some tangential smoothing to the vertex positions
+        double w = 0.2;
+        for(int rsmooth = 0; rsmooth<20; rsmooth++){
+          for(VertexIter v = mesh.verticesBegin(); v != mesh.verticesEnd(); v++){
+             v->computeCentroid();
+          }
+          for(VertexIter v = mesh.verticesBegin(); v != mesh.verticesEnd(); v++){
+            Vector3D n = v->normal();
+            Vector3D dv = v->centroid - v->position;
+
+            v->position += w * (dv - dot(n,dv) * n);
+          }
+
+        }
+
+      } // for: Repeat the four main steps for 5 or 6 iterations
+   }
 
 }
