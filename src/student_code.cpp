@@ -634,29 +634,6 @@ namespace CMU462
          }
        }
      }
-
-<<<<<<< HEAD
-        // Insert any edge touching the new vertex into the queue, creating new edge records for each of them.
-        HalfedgeIter h = vn->halfedge();
-        do{
-          EdgeRecord inse;
-          inse = EdgeRecord(h->edge());
-          erQueue.insert(inse);
-          h = h->next()->next()->twin();
-        }while(h!=vn->halfedge()&&!h->face()->isBoundary());
-
-        if(h->face()->isBoundary()){
-          h = vn->halfedge()->twin()->next()->twin();
-          do{
-            EdgeRecord inse;
-            inse = EdgeRecord(h->edge());
-            erQueue.insert(inse);
-            h = h->next()->twin();
-          }while(h!=vn->halfedge()&&!h->face()->isBoundary());
-        }
-      }
-=======
->>>>>>> develop
 }
 
    void Vertex::computeCentroid( void )
@@ -839,6 +816,9 @@ namespace CMU462
         double w = 0.2;
         for(int rsmooth = 0; rsmooth<smoothTimes; rsmooth++){
           for(VertexIter v = mesh.verticesBegin(); v != mesh.verticesEnd(); v++){
+            if(v->degree()<3){
+              continue;
+            }
              v->computeCentroid();
             //  cout<<v->centroid<<endl;
             // cout<<"centroid computing"<<endl;
