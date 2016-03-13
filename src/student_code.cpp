@@ -1,7 +1,7 @@
 /*
  * Student solution for CMU 15-462 Project 2 (MeshEdit)
  *
- * Implemented by Xiaoshan Lu on ____.
+ * Implemented by Xiaoshan Lu on Feburary to March, 2016.
  *
  */
 
@@ -20,9 +20,63 @@ namespace CMU462
       // TODO This method should split the given edge and return an iterator to the newly inserted vertex.
       // TODO The halfedge of this vertex should point along the edge that was split, rather than the new edges.
       if(e0->halfedge()->face()->isBoundary()||e0->halfedge()->twin()->face()->isBoundary()){
-        std::cerr << "Cannot split a boundary." << std::endl;
+        std::cerr << "Split a boundary." << std::endl;
+        HalfedgeIter h[10];
+        if(!e0->halfedge()->isBoundary()){
+          h[0] = e0->halfedge();
+        }
+        else{
+          h[0] = e0->halfedge()->twin();
+        }
+        // cout<<elementAddress(h[0])<<endl;
+        h[1] = h[0]->next();
+        h[2] = h[1]->next();
+        h[3] = h[0]->twin();
+        h[4] = h[1]->twin();
+        h[5] = h[2]->twin();
+        for(int i=6;i<10;i++){
+          h[i] = newHalfedge();
+        }
+
+        VertexIter v[4];
+        v[0] = h[0]->vertex();
+        v[1] = h[1]->vertex();
+        v[2] = h[2]->vertex();
+        // new
+        v[3] = newVertex();
+        v[3]->halfedge() = h[7];
+        v[3]->position = (v[0]->position + v[1]->position)/2;
+
+        EdgeIter e[3];
+        e[0] = e0;
+        for(int i=1;i<3;i++){
+          e[i] = newEdge();
+        }
+        e[0]->halfedge() = h[0];
+        e[1]->halfedge() = h[6];
+        e[2]->halfedge() = h[8];
+
+        FaceIter f[3];
+        f[1] = h[0]->face();
+        f[2] = newFace();
+        f[0] = newBoundary();
+        f[1]->halfedge() = h[0];
+        f[2]->halfedge() = h[6];
+        f[0]->halfedge() = h[7];
+
+        //                    next        ,twin         ,vertex         ,edge         ,face
+        h[0 ]-> setNeighbors(h[8]             ,h[7]         ,h[0]->vertex() ,h[0]->edge() ,f[1]         );
+        h[1 ]-> setNeighbors(h[9]             ,h[1]->twin() ,h[1]->vertex() ,h[1]->edge() ,f[2]         );
+        h[3 ]-> setNeighbors(h[7]             ,h[6]         ,h[3]->vertex() ,e[1]         ,h[3]->face() );
+        h[7 ]-> setNeighbors(v[0]->halfedge() ,h[0]         ,v[3]           ,e[0]         ,f[0]         );
+        h[6 ]-> setNeighbors(h[1]             ,h[3]         ,v[3]           ,e[1]         ,f[2]         );
+        h[8 ]-> setNeighbors(h[2]             ,h[9]         ,v[3]           ,e[2]         ,f[1]         );
+        h[9 ]-> setNeighbors(h[6]             ,h[8]         ,v[2]           ,e[2]         ,f[2]         );
+
+        // cout<<"h7: "<<elementAddress(h[7])<<endl;
+        // cout<<"h3: "<<elementAddress(h[3])<<h[3]->isBoundary()<<endl;
         // throw EdgeEditException(20);
-        return VertexIter();
+        return v[3];
       }
 
       HalfedgeIter h[12];
@@ -154,15 +208,15 @@ namespace CMU462
      v[2] = h[2]->vertex();
      v[3] = h[5]->vertex();
      // check
-     if(!ds){
-       for(int i=0;i<4;i++){
-         if(v[i]->degree()<=3){
-             std::cerr << "Cannot collapse this edge. (enpoints degree <= 3)" << std::endl;
-            //  throw EdgeEditException(30);
-             return v[0];
-         }
-       }
-     }
+    //  if(!ds){
+    //    for(int i=0;i<4;i++){
+    //      if(v[i]->degree()<=3){
+    //          std::cerr << "Cannot collapse this edge. (enpoints degree <= 3)" << std::endl;
+    //         //  throw EdgeEditException(30);
+    //          return v[0];
+    //      }
+    //    }
+    //  }
 
      if(v[2]->degree()<=3||v[3]->degree()<=3){
         std::cerr << "Cannot collapse this edge. (points degree <= 3)" << std::endl;
@@ -210,7 +264,7 @@ namespace CMU462
      h_pointer = h[6]->next();
      while(h_pointer!=h[7]){
        // std::cout<<"right"<<": "<<elementAddress(h_pointer->edge())<<std::endl;
-       if(ds&&h_pointer->edge()!=e[1]&&h_pointer->edge()!=e[4]){
+       if(ds&&h_pointer->edge()!=e[1]&&h_pointer->edge()!=e[2]&&h_pointer->edge()!=e[3]&&h_pointer->edge()!=e[4]){
          erQueue.remove(h_pointer->edge()->record);
        }
        h_pointer->setNeighbors(h_pointer->next(),h_pointer->twin(),v[0],h_pointer->edge(),h_pointer->face());
@@ -300,9 +354,6 @@ namespace CMU462
         }
         h_pointer = h_pointer->twin()->next();
       }while(h_pointer!=v[3]->halfedge());
-
-
-
 
       // for(int i=0;i<4;i++){
       //   std::cout<<"v"<<i<<": "<<elementAddress(v[i])<<std::endl;
@@ -816,17 +867,17 @@ namespace CMU462
         double w = 0.2;
         for(int rsmooth = 0; rsmooth<smoothTimes; rsmooth++){
           for(VertexIter v = mesh.verticesBegin(); v != mesh.verticesEnd(); v++){
-            if(v->degree()<=3){
+            // if(v->degree()<=3){
               // continue;
-            }
+            // }
              v->computeCentroid();
             //  cout<<v->centroid<<endl;
             // cout<<"centroid computing"<<endl;
           }
           for(VertexIter v = mesh.verticesBegin(); v != mesh.verticesEnd(); v++){
-            if(v->degree()<=3){
+            // if(v->degree()<=3){
               // continue;
-            }
+            // }
             Vector3D n = v->normal();
             Vector3D dv = v->centroid - v->position;
 
