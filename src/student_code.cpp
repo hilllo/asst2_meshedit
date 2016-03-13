@@ -89,28 +89,27 @@ namespace CMU462
       f[1]->halfedge() = h[4];
       e0->halfedge() = h[0];
 
-      v[0]->halfedge() = h[4];
-      v[1]->halfedge() = h[1];
-      v[2]->halfedge() = h[2];
-      v[3]->halfedge() = h[5];
+      if(!v[0]->isBoundary()) v[0]->halfedge() = h[4];
+      if(!v[1]->isBoundary()) v[1]->halfedge() = h[1];
+      if(!v[2]->isBoundary()) v[2]->halfedge() = h[2];
+      if(!v[3]->isBoundary()) v[3]->halfedge() = h[5];
 
 			return v[4];
 	 }
 
    bool collapseValid(EdgeIter e){
-     VertexIter v[4];
-     v[0] = e->halfedge()->vertex();
-     v[1] = e->halfedge()->twin()->vertex();
-     v[2] = e->halfedge()->next()->twin()->vertex();
-     v[3] = e->halfedge()->twin()->next()->twin()->vertex();
-     for(int i=0;i<4;i++){
-       if(v[i]->degree()<3){
-           std::cerr << "Cannot collapse this edge. (enpoints degree < 3)" << std::endl;
-
-           // throw EdgeEditException(30);
-           return false;
-       }
-     }
+    //  VertexIter v[4];
+    //  v[0] = e->halfedge()->vertex();
+    //  v[1] = e->halfedge()->twin()->vertex();
+    //  v[2] = e->halfedge()->next()->twin()->vertex();
+    //  v[3] = e->halfedge()->twin()->next()->twin()->vertex();
+    //  for(int i=2;i<4;i++){
+    //    if(v[i]->degree()<=3){
+    //        std::cerr << "Cannot collapse this edge. (enpoints degree < 3)" << std::endl;
+    //        // throw EdgeEditException(30);
+    //        return false;
+    //    }
+    //  }
      return true;
    }
 
@@ -165,9 +164,10 @@ namespace CMU462
        }
      }
 
-    //  if(v[2]->degree()==3||v[3]->degree()==3){
-    //     std::cerr << "Cannot collapse this edge. (points degree == 3)" << std::endl;
-    //  }
+     if(v[2]->degree()<=3||v[3]->degree()<=3){
+        std::cerr << "Cannot collapse this edge. (points degree <= 3)" << std::endl;
+        return v[0];
+     }
 
 
      v[0]->position = (v[0]->position + v[1]->position)/2;
@@ -283,8 +283,8 @@ namespace CMU462
       v[3] = h[5]->vertex();
       // check
       for(int i=0;i<2;i++){
-        if(v[i]->degree() < 3){
-            std::cerr << "Cannot flip this edge. (endpoints degree < 3)" << std::endl;
+        if(v[i]->degree() <= 3){
+            std::cerr << "Cannot flip this edge. (endpoints degree <= 3)" << std::endl;
            //  throw EdgeEditException(30);
             return e0;
         }
@@ -486,19 +486,19 @@ namespace CMU462
 
       // TODO Also store the cost associated with collapsing this edge
       // TODO in EdgeRecord::Cost.
-      // VertexIter v[4];
-      // v[0] = _edge->halfedge()->vertex();
-      // v[1] = _edge->halfedge()->twin()->vertex();
-      // v[2] = _edge->halfedge()->next()->twin()->vertex();
-      // v[3] = _edge->halfedge()->twin()->next()->twin()->vertex();
-      // for(int i=0;i<4;i++){
-      //   if(v[i]->degree()<=3){
+      VertexIter v[4];
+      v[0] = _edge->halfedge()->vertex();
+      v[1] = _edge->halfedge()->twin()->vertex();
+      v[2] = _edge->halfedge()->next()->twin()->vertex();
+      v[3] = _edge->halfedge()->twin()->next()->twin()->vertex();
+      for(int i=0;i<4;i++){
+        if(v[i]->degree()<=3){
       //       // std::cerr << "Cannot collapse this edge." << std::endl;
-      //       score = numeric_limits<double>::max();
+            score = numeric_limits<double>::max();
       //       throw EdgeEditException(30);
       //       // break;
-      //   }
-      // }
+        }
+      }
 
       Vector4D xh = Vector4D(x.x,x.y,x.z,1);
       score = dot(combQ*xh, xh);
@@ -658,7 +658,7 @@ namespace CMU462
           h = h->twin()->next();
         }while(h!=this->halfedge()&&!h->face()->isBoundary());
       }
-      this->centroid = sum / float(count);
+      this->centroid = sum / double(count);
    }
 
    Vector3D Vertex::normal( void ) const
@@ -766,7 +766,7 @@ namespace CMU462
           EdgeIter e = edgeList.back();
           edgeList.pop_back();
           if(e->length()<collapseL){
-            if(collapseValid(e)){
+            // if(collapseValid(e)){
               bool found ;
               found = (std::find(edgeList.begin(), edgeList.end(), e->halfedge()->next()->edge()) != edgeList.end());
               if(found) edgeList.remove(e->halfedge()->next()->edge());
@@ -778,7 +778,7 @@ namespace CMU462
               if(found) edgeList.remove(e->halfedge()->twin()->next()->next()->edge());
               mesh.collapseEdge(e);
               // cout<<"C!"<<endl;
-            }
+            // }
           } // if(e->length()<collapseL)
 
         } // while(!edgeList.empty())
@@ -816,16 +816,16 @@ namespace CMU462
         double w = 0.2;
         for(int rsmooth = 0; rsmooth<smoothTimes; rsmooth++){
           for(VertexIter v = mesh.verticesBegin(); v != mesh.verticesEnd(); v++){
-            if(v->degree()<3){
-              continue;
+            if(v->degree()<=3){
+              // continue;
             }
              v->computeCentroid();
             //  cout<<v->centroid<<endl;
             // cout<<"centroid computing"<<endl;
           }
           for(VertexIter v = mesh.verticesBegin(); v != mesh.verticesEnd(); v++){
-            if(v->degree()<3){
-              continue;
+            if(v->degree()<=3){
+              // continue;
             }
             Vector3D n = v->normal();
             Vector3D dv = v->centroid - v->position;
