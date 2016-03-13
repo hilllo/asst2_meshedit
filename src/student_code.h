@@ -52,6 +52,8 @@ namespace CMU462 {
 
   };
 
+  bool collapseValid(EdgeIter e);
+
   class MeshResampler{
 
       public:
@@ -62,8 +64,6 @@ namespace CMU462 {
          void upsample  ( HalfedgeMesh& mesh );
          void downsample( HalfedgeMesh& mesh );
          void resample  ( HalfedgeMesh& mesh );
-
-         void downsample_10( HalfedgeMesh& mesh );
    };
 }
 
