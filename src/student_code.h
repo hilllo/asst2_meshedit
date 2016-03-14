@@ -52,8 +52,6 @@ namespace CMU462 {
 
   };
 
-  bool collapseValid(EdgeIter e);
-
   class MeshResampler{
 
       public:
