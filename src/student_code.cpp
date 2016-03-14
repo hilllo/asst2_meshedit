@@ -6,9 +6,6 @@
  */
 
 #include "student_code.h"
-
-#include <algorithm>
-
 #include "mutablePriorityQueue.h"
 
 namespace CMU462
@@ -694,7 +691,7 @@ namespace CMU462
       int repeatTimes = 6;
       int smoothTimes = 10;
       if(mesh.nFaces()>10000){
-        repeatTimes = 1;
+        repeatTimes = 5;
         smoothTimes = 10;
       }
       for(int rmain = 0; rmain<repeatTimes;rmain++){
@@ -733,16 +730,12 @@ namespace CMU462
           EdgeIter e = edgeList.back();
           edgeList.pop_back();
           if(e->length()<collapseL){
-              bool found ;
-              found = (std::find(edgeList.begin(), edgeList.end(), e->halfedge()->next()->edge()) != edgeList.end());
-              if(found) edgeList.remove(e->halfedge()->next()->edge());
-              found = (std::find(edgeList.begin(), edgeList.end(), e->halfedge()->next()->next()->edge()) != edgeList.end());
-              if(found) edgeList.remove(e->halfedge()->next()->next()->edge());
-              found = (std::find(edgeList.begin(), edgeList.end(), e->halfedge()->twin()->next()->edge()) != edgeList.end());
-              if(found) edgeList.remove(e->halfedge()->twin()->next()->edge());
-              found = (std::find(edgeList.begin(), edgeList.end(), e->halfedge()->twin()->next()->next()->edge()) != edgeList.end());
-              if(found) edgeList.remove(e->halfedge()->twin()->next()->next()->edge());
-              mesh.collapseEdge(e);
+              VertexIter vo = e->halfedge()->vertex();
+              EdgeIter e2 = e->halfedge()->next()->next()->edge();
+              EdgeIter e3 = e->halfedge()->twin()->next()->edge();
+              VertexIter vn = mesh.collapseEdge(e);
+              edgeList.remove(e2);
+              edgeList.remove(e3);
           } // if(e->length()<collapseL)
         } // while(!edgeList.empty())
 
